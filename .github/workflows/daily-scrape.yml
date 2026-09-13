@@ -1,0 +1,38 @@
+name: Perimeter Brief — daily scrape
+
+# Runs entirely on GitHub's own runners — no dependency on any local machine
+# being on. Scheduled 30 minutes before the Claude routine's 07:00 UTC run,
+# so the digest this produces is always fresh by the time the brief is written.
+on:
+  schedule:
+    - cron: "30 6 * * *"
+  workflow_dispatch: {}  # lets you trigger a run manually from the Actions tab
+
+permissions:
+  contents: write  # needed to commit the updated digest + dedup state back to the repo
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run scraper
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python -m scraper.main
+
+      - name: Commit updated digest + state
+        run: |
+          git config user.name "perimeter-brief-bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add digest/ state/seen.json
+          git diff --cached --quiet && echo "No changes to commit" || git commit -m "Daily scrape: $(date -u +%F)"
+          git push

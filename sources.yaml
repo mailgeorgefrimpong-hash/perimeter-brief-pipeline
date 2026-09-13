@@ -1,0 +1,323 @@
+# Perimeter Brief — source catalog
+#
+# Every source here has a real, verified endpoint (checked live before being added —
+# see the `checked` date on each). Nothing here is scraped by guesswork or by an LLM
+# deciding what to search for: each `type` maps to one deterministic fetcher in
+# scraper/fetchers.py that hits a known API/feed and pulls fixed fields.
+#
+# `active: false` sources are ones that failed a direct check (blocked, wrong shape,
+# needs auth) and are kept here as documented TODOs rather than silently dropped or
+# guessed at — matching the brief's own "never fabricate a source" rule. The daily
+# run logs every active source it successfully reached vs. one that errored, same
+# shape as the existing Ops dashboard's sources.reached / sources.blocked.
+#
+# window_days: how far back (from "now") an item's own published/added date must
+# fall to be considered "new" this run — independent of dedup (dedup additionally
+# blocks anything already surfaced in a prior run, via state/seen.json).
+
+tier1:
+  - id: cisa_kev
+    name: "CISA Known Exploited Vulnerabilities"
+    type: cisa_kev
+    url: "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+    window_days: 7
+    active: true
+    checked: "2026-09-13"
+
+  - id: nvd_critical
+    name: "NVD — newly published CVEs, CVSS 9.0+"
+    type: nvd_cve
+    url: "https://services.nvd.nist.gov/rest/json/cves/2.0"
+    min_cvss: 9.0
+    window_days: 7
+    active: true
+    checked: "2026-09-13"
+    note: "Public NVD API. Unauthenticated rate limit is low (5 req/30s) — the workflow only calls this once per run."
+
+  - id: sans_isc
+    name: "SANS Internet Storm Center — diary"
+    type: rss
+    url: "https://isc.sans.edu/rssfeed_full.xml"
+    window_days: 7
+    active: true
+    checked: "2026-09-13"
+
+  - id: m365_roadmap
+    name: "Microsoft 365 Roadmap"
+    type: rss
+    url: "https://www.microsoft.com/en-us/microsoft-365/roadmap?rss=1"
+    window_days: 10
+    active: true
+    checked: "2026-09-13"
+
+  - id: ms_security_blog
+    name: "Microsoft Security Blog"
+    type: rss
+    url: "https://www.microsoft.com/en-us/security/blog/feed/"
+    window_days: 7
+    active: true
+    checked: "2026-09-13"
+
+  - id: status_azure
+    name: "Azure status history"
+    type: rss
+    url: "https://status.azure.com/en-us/status/feed/"
+    window_days: 3
+    active: true
+    checked: "2026-09-13"
+
+  - id: status_aws
+    name: "AWS Service Health"
+    type: rss
+    url: "https://status.aws.amazon.com/rss/all.rss"
+    window_days: 3
+    active: true
+    checked: "2026-09-13"
+
+  - id: status_gcp
+    name: "Google Cloud status"
+    type: rss
+    url: "https://status.cloud.google.com/en/feed.atom"
+    window_days: 3
+    active: true
+    checked: "2026-09-13"
+
+  - id: status_cloudflare
+    name: "Cloudflare status"
+    type: statuspage_json
+    url: "https://www.cloudflarestatus.com/api/v2/incidents.json"
+    window_days: 3
+    min_impact: "minor"
+    active: true
+    checked: "2026-09-13"
+
+  - id: status_zoom
+    name: "Zoom status"
+    type: statuspage_json
+    url: "https://status.zoom.us/api/v2/incidents.json"
+    window_days: 3
+    min_impact: "minor"
+    active: true
+    checked: "2026-09-13"
+
+  - id: status_slack
+    name: "Slack status"
+    type: slack_status
+    url: "https://slack-status.com/api/v2.0.0/current"
+    window_days: 3
+    active: true
+    checked: "2026-09-13"
+
+  - id: status_okta
+    name: "Okta status"
+    type: statuspage_json
+    url: "https://status.okta.com/api/v2/incidents.json"
+    window_days: 3
+    min_impact: "minor"
+    active: false
+    checked: "2026-09-13"
+    note: "Returned 401 on a plain GET as of the check date — Okta's status API may require a header/referrer. Needs a manual re-check before enabling."
+
+  - id: status_salesforce
+    name: "Salesforce status"
+    type: statuspage_json
+    url: "https://api.status.salesforce.com/v1/instances/status/preview"
+    window_days: 3
+    active: false
+    checked: "2026-09-13"
+    note: "Salesforce runs its own status platform, not Statuspage — the real endpoint shape needs confirming before this can be trusted. Left inactive rather than guessed."
+
+  - id: citrix_bulletins
+    name: "Citrix security bulletins"
+    type: rss
+    url: "https://support.citrix.com/feeds/security-bulletins"
+    window_days: 7
+    active: true
+    checked: "2026-09-13"
+
+  - id: paloalto_bulletins
+    name: "Palo Alto Networks security advisories"
+    type: rss
+    url: "https://security.paloaltonetworks.com/rss.xml"
+    window_days: 7
+    active: true
+    checked: "2026-09-13"
+
+  - id: cisco_bulletins
+    name: "Cisco security advisories"
+    type: rss
+    url: "https://sec.cloudapps.cisco.com/security/center/cvrfListing.x"
+    window_days: 7
+    active: false
+    checked: "2026-09-13"
+    note: "This URL returns Cisco's HTML advisory listing, not a feed — no reliable unauthenticated feed found. Cisco's real machine-readable source is the openVuln API, which needs a registered API client (client_id/secret). Left inactive until that's set up; the brief can keep covering Cisco via GitHub Advisories / CISA KEV in the meantime, both of which already surface actively-exploited Cisco CVEs."
+
+  - id: fortinet_bulletins
+    name: "Fortinet PSIRT advisories"
+    type: rss
+    url: "https://www.fortiguard.com/rss/ir.xml"
+    window_days: 7
+    active: false
+    checked: "2026-09-13"
+    note: "Returned HTTP 500 as of the check date. Re-check periodically; leave inactive until it responds cleanly."
+
+  - id: github_advisories
+    name: "GitHub Security Advisories"
+    type: github_advisories
+    url: "https://api.github.com/advisories"
+    window_days: 3
+    active: true
+    checked: "2026-09-13"
+    note: "Uses the workflow's built-in GITHUB_TOKEN for a friendlier rate limit; works unauthenticated too, just with a lower limit."
+
+tier2:
+  # Each entry is one tracked expert's own RSS feed. Item titles/links are pulled
+  # verbatim — the writing-up (turning a title into the brief's three-part entry)
+  # still happens in the Claude step, this only supplies the raw facts.
+  - id: redmond
+    name: "Tony Redmond — office365itpros.com"
+    type: rss
+    url: "https://office365itpros.com/feed/"
+    window_days: 10
+    active: true
+    checked: "2026-09-13"
+
+  - id: michev
+    name: "Vasil Michev — michev.info"
+    type: rss
+    url: "https://michev.info/blog/feed"
+    window_days: 10
+    active: true
+    checked: "2026-09-13"
+
+  - id: troyhunt
+    name: "Troy Hunt — troyhunt.com"
+    type: rss
+    url: "https://www.troyhunt.com/rss/"
+    window_days: 10
+    active: true
+    checked: "2026-09-13"
+
+  - id: strant
+    name: "Loryan Strant — loryanstrant.com"
+    type: rss
+    url: "https://loryanstrant.com/feed/"
+    window_days: 10
+    active: true
+    checked: "2026-09-13"
+
+  - id: sacolick
+    name: "Isaac Sacolick — social-biz.org"
+    type: rss
+    url: "https://social-biz.org/feed/"
+    window_days: 10
+    active: true
+    checked: "2026-09-13"
+
+  - id: intellyx
+    name: "Intellyx (Bloomberg / Araujo)"
+    type: rss
+    url: "https://intellyx.com/feed/"
+    window_days: 10
+    active: true
+    checked: "2026-09-13"
+    note: "Publishes both Jason Bloomberg and Charles Araujo — the digest carries each post's byline through from the feed's <dc:creator>/author field where present."
+
+  - id: beaumont
+    name: "Kevin Beaumont — doublepulsar.com"
+    type: rss
+    url: "https://doublepulsar.com/feed"
+    window_days: 10
+    active: true
+    checked: "2026-09-13"
+
+  - id: metcalf
+    name: "Sean Metcalf — adsecurity.org"
+    type: rss
+    url: "https://adsecurity.org/?feed=rss2"
+    window_days: 10
+    active: true
+    checked: "2026-09-13"
+
+  - id: blackman
+    name: "Reid Blackman — virtueconsultants.com"
+    type: rss
+    url: "https://virtueconsultants.com/feed/"
+    window_days: 10
+    active: true
+    checked: "2026-09-13"
+
+  - id: robichaux
+    name: "Paul Robichaux — robichaux.net"
+    type: rss
+    url: "https://robichaux.net/feed/"
+    window_days: 10
+    active: false
+    checked: "2026-09-13"
+    note: "Connection failed outright on the check date (matches the crashed/blocked notes already in the Ops run log for this domain). Re-check periodically."
+
+  - id: mcnulty
+    name: "Nathan McNulty — nathanmcnulty.com"
+    type: rss
+    url: "https://nathanmcnulty.com/feed/"
+    window_days: 10
+    active: false
+    checked: "2026-09-13"
+    note: "/feed/ returned 404 — the real feed path needs confirming (some WordPress sites use /feed without the trailing slash, or a different permalink structure)."
+
+  - id: foley
+    name: "Mary Jo Foley — All About Microsoft (zdnet.com)"
+    type: rss
+    url: ""
+    window_days: 10
+    active: false
+    checked: "2026-09-13"
+    note: "ZDNet does not expose a clean per-column RSS feed. No reliable unauthenticated endpoint found — left out rather than guessed. Worth an occasional manual check instead of daily automation."
+
+tier3:
+  - id: hn_signal
+    name: "Hacker News — enterprise IT/security signal"
+    type: hn_algolia
+    url: "https://hn.algolia.com/api/v1/search_by_date"
+    keywords:
+      - "Microsoft 365"
+      - "Entra"
+      - "Conditional Access"
+      - "ransomware"
+      - "zero-day"
+      - "CISA"
+      - "enterprise security"
+      - "Copilot"
+    window_days: 7
+    active: true
+    checked: "2026-09-13"
+
+  - id: stackexchange_signal
+    name: "Stack Exchange — practitioner questions"
+    type: stackexchange
+    url: "https://api.stackexchange.com/2.3/questions"
+    sites: ["serverfault", "security", "stackoverflow"]
+    window_days: 7
+    active: true
+    checked: "2026-09-13"
+    note: "Unauthenticated calls share a low daily quota across all callers of the API from the same IP — fine for one run/day, do not increase call frequency without a registered app key."
+
+  - id: github_issues_signal
+    name: "GitHub — public issue discussion"
+    type: github_issues_search
+    url: "https://api.github.com/search/issues"
+    keywords:
+      - "prompt injection"
+      - "OAuth Entra"
+      - "Conditional Access bypass"
+    window_days: 7
+    active: true
+    checked: "2026-09-13"
+    note: "Uses the workflow's GITHUB_TOKEN — the search API is heavily throttled without auth."
+
+  # LinkedIn / Quora / Reddit have no reliable, official, unauthenticated read API
+  # (Reddit's public .json endpoints frequently 403 from data-center IPs, exactly
+  # as already logged in several past Ops runs). These three are intentionally left
+  # OUT of the scripted pipeline rather than faked — if you want them covered, that
+  # stays a small, occasional WebSearch job for the Claude step, not something to
+  # script against a platform that doesn't offer a stable public API.
